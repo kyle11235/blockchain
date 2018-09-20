@@ -8,6 +8,13 @@
  * Register and Enroll a user
  */
 
+var ca_url = 'http://localhost:32787';
+var adminName = 'admin';
+var mspID = 'idplatform';
+var affiliation = 'org1.department1';
+var userName = 'user2';
+
+
 var Fabric_Client = require('fabric-client');
 var Fabric_CA_Client = require('fabric-ca-client');
 
@@ -39,31 +46,31 @@ Fabric_Client.newDefaultKeyValueStore({ path: store_path
     	verify: false
     };
     // be sure to change the http to https when the CA is running TLS enabled
-    fabric_ca_client = new Fabric_CA_Client('http://localhost:7054', null , '', crypto_suite);
+    fabric_ca_client = new Fabric_CA_Client(ca_url, null , '', crypto_suite);
 
     // first check to see if the admin is already enrolled
-    return fabric_client.getUserContext('admin', true);
+    return fabric_client.getUserContext(adminName, true);
 }).then((user_from_store) => {
     if (user_from_store && user_from_store.isEnrolled()) {
-        console.log('Successfully loaded admin from persistence');
+        console.log('Successfully loaded ' + adminName + ' from persistence');
         admin_user = user_from_store;
     } else {
-        throw new Error('Failed to get admin.... run enrollAdmin.js');
+        throw new Error('Failed to get ' + adminName + '.... run enrollAdmin.js');
     }
 
     // at this point we should have the admin user
     // first need to register the user with the CA server
-    return fabric_ca_client.register({enrollmentID: 'user1', affiliation: 'org1.department1',role: 'client'}, admin_user);
+    return fabric_ca_client.register({enrollmentID: userName, affiliation: affiliation,role: 'client'}, admin_user);
 }).then((secret) => {
     // next we need to enroll the user with CA server
-    console.log('Successfully registered user1 - secret:'+ secret);
+    console.log('Successfully registered ' + userName + ' - secret:'+ secret);
 
-    return fabric_ca_client.enroll({enrollmentID: 'user1', enrollmentSecret: secret});
+    return fabric_ca_client.enroll({enrollmentID: userName, enrollmentSecret: secret});
 }).then((enrollment) => {
-  console.log('Successfully enrolled member user "user1" ');
+  console.log('Successfully enrolled member ' + userName);
   return fabric_client.createUser(
-     {username: 'user1',
-     mspid: 'Org1MSP',
+     {username: userName,
+     mspid: mspID,
      cryptoContent: { privateKeyPEM: enrollment.key.toBytes(), signedCertPEM: enrollment.certificate }
      });
 }).then((user) => {

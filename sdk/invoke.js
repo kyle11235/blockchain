@@ -8,6 +8,12 @@
  * Chaincode Invoke
  */
 
+var peer_url = 'grpc://localhost:10024';
+var orderer_url = 'grpc://localhost:9876';
+var channelName = 'army';
+var userName = 'admin'; // can be an admin or a user
+
+
 var Fabric_Client = require('fabric-client');
 var path = require('path');
 var util = require('util');
@@ -17,10 +23,10 @@ var os = require('os');
 var fabric_client = new Fabric_Client();
 
 // setup the fabric network
-var channel = fabric_client.newChannel('mychannel');
-var peer = fabric_client.newPeer('grpc://localhost:7051');
+var channel = fabric_client.newChannel(channelName);
+var peer = fabric_client.newPeer(peer_url);
 channel.addPeer(peer);
-var order = fabric_client.newOrderer('grpc://localhost:7050')
+var order = fabric_client.newOrderer(orderer_url);
 channel.addOrderer(order);
 
 //
@@ -42,13 +48,13 @@ Fabric_Client.newDefaultKeyValueStore({ path: store_path
 	fabric_client.setCryptoSuite(crypto_suite);
 
 	// get the enrolled user from persistence, this user will sign all requests
-	return fabric_client.getUserContext('user1', true);
+	return fabric_client.getUserContext(userName, true);
 }).then((user_from_store) => {
 	if (user_from_store && user_from_store.isEnrolled()) {
-		console.log('Successfully loaded user1 from persistence');
+		console.log('Successfully loaded ' + userName + ' from persistence');
 		member_user = user_from_store;
 	} else {
-		throw new Error('Failed to get user1.... run registerUser.js');
+		throw new Error('Failed to get ' + userName + '.... run registerUser.js');
 	}
 
 	// get a transaction id object based on the current user assigned to fabric client
@@ -60,10 +66,9 @@ Fabric_Client.newDefaultKeyValueStore({ path: store_path
 	// must send the proposal to endorsing peers
 	var request = {
 		//targets: let default to the peer assigned to the client
-		chaincodeId: 'fabcar',
-		fcn: '',
-		args: [''],
-		chainId: 'mychannel',
+		chaincodeId: 'identity',
+		fcn: 'createIdentity',
+		args: ["10002","kyle","user6@mail.com","13001010101","user6 company"],
 		txId: tx_id
 	};
 
@@ -103,7 +108,7 @@ Fabric_Client.newDefaultKeyValueStore({ path: store_path
 		// get an eventhub once the fabric client has a user assigned. The user
 		// is required bacause the event registration must be signed
 		let event_hub = fabric_client.newEventHub();
-		event_hub.setPeerAddr('grpc://localhost:7053');
+		event_hub.setPeerAddr(peer_url);
 
 		// using resolve the promise so that result status may be processed
 		// under the then clause rather than having the catch clause process
